@@ -1,21 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
+import { useAccount, useWriteContract } from 'wagmi'
 import { REGISTRAR_ABI, DURATIONS, daysUntilExpiry, formatAmount, estimatePrice } from '@/lib/contracts'
 import { SUPPORTED_CHAINS } from '@/lib/wagmi'
-
-// NameRegistered event ABI — used to scan for names owned by the wallet
-const NAME_REGISTERED_EVENT = {
-  name: 'NameRegistered',
-  type: 'event',
-  inputs: [
-    { name: 'name',    type: 'string',  indexed: false },
-    { name: 'label',   type: 'bytes32', indexed: true  },
-    { name: 'owner',   type: 'address', indexed: true  },
-    { name: 'expires', type: 'uint256', indexed: false },
-  ],
-} as const
 
 type OwnedName = {
   name:    string
@@ -25,109 +13,47 @@ type OwnedName = {
 }
 
 export default function ManageTab() {
-  const { address }          = useAccount()
+  const { address }            = useAccount()
   const { writeContractAsync } = useWriteContract()
-  const publicClient         = usePublicClient({ chainId: 5042002 })
 
-  const [names, setNames]             = useState<OwnedName[]>([])
-  const [loading, setLoading]         = useState(false)
+  const [names, setNames]                   = useState<OwnedName[]>([])
+  const [loading, setLoading]               = useState(false)
   const [transferTarget, setTransferTarget] = useState<string | null>(null)
   const [transferAddr, setTransferAddr]     = useState('')
   const [actionLoading, setActionLoading]   = useState<string | null>(null)
-  const [msg, setMsg]                 = useState<{ text: string; ok: boolean } | null>(null)
+  const [msg, setMsg]                       = useState<{ text: string; ok: boolean } | null>(null)
 
-  // Fetch all names registered by the connected wallet across all supported chains
+  // Fetch names from the indexer API
   useEffect(() => {
-    if (!address || !publicClient) return
-    const client = publicClient!
+    if (!address) return
 
     async function fetchNames() {
       setLoading(true)
       setNames([])
 
-      const allNames: OwnedName[] = []
+      try {
+        const res  = await fetch(`/api/names?owner=${address}`)
+        const data = await res.json()
 
-      for (const chain of SUPPORTED_CHAINS) {
-        // Only scan Arc Testnet — other chains use a different client
-        if (chain.id !== 5042002) continue
-        if (!chain.registrarAddress || chain.registrarAddress === '-' as any) continue
+        if (!res.ok) throw new Error(data.error || 'API error')
 
-        try {
-          // Arc RPC limits eth_getLogs to 10,000 block range
-          const latestBlock = await client.getBlockNumber()
-          const fromBlock = latestBlock > BigInt(10000)
-            ? latestBlock - BigInt(10000)
-            : BigInt(0)
+        const mapped: OwnedName[] = (data.names || []).map((n: any) => ({
+          name:    n.name,
+          expiry:  BigInt(n.expires),
+          chainId: n.chain_id,
+          chain:   SUPPORTED_CHAINS.find(c => c.id === n.chain_id)?.name || 'Arc',
+        }))
 
-          console.log(`Scanning Arc blocks ${fromBlock}–${latestBlock} for ${address}`)
-
-          const logs = await client.getLogs({
-            address: chain.registrarAddress,
-            event: NAME_REGISTERED_EVENT,
-            args: { owner: address },
-            fromBlock,
-            toBlock: 'latest',
-          })
-          console.log(`Found ${logs.length} log(s) on Arc`)
-
-          // For each registration, get the current expiry from the contract
-          for (const log of logs) {
-            const name = (log as any).args?.name
-            if (!name) continue
-
-            try {
-              const expiry = await client.readContract({
-                address: chain.registrarAddress,
-                abi: REGISTRAR_ABI,
-                functionName: 'nameExpiry',
-                args: [name],
-              }) as bigint
-
-              // Only include if not expired
-              const now = BigInt(Math.floor(Date.now() / 1000))
-              if (expiry > now) {
-                // Check it's still owned by this wallet (hasn't been transferred)
-                const available = await client.readContract({
-                  address: chain.registrarAddress,
-                  abi: REGISTRAR_ABI,
-                  functionName: 'available',
-                  args: [name],
-                }) as boolean
-
-                if (!available) {
-                  allNames.push({
-                    name,
-                    expiry,
-                    chainId: chain.id,
-                    chain:   chain.name,
-                  })
-                }
-              }
-            } catch {
-              // Skip names that error on read
-            }
-          }
-        } catch (err) {
-          console.error(`Error scanning ${chain.name}:`, err)
-        }
+        setNames(mapped)
+      } catch (err: any) {
+        console.error('Failed to fetch names:', err.message)
+      } finally {
+        setLoading(false)
       }
-
-      // Deduplicate by name+chainId and sort by expiry ascending
-      const seen = new Set<string>()
-      const deduped = allNames.filter(n => {
-        const key = `${n.name}-${n.chainId}`
-        if (seen.has(key)) return false
-        seen.add(key)
-        return true
-      })
-
-      deduped.sort((a, b) => Number(a.expiry - b.expiry))
-      setNames(deduped)
-      setLoading(false)
     }
 
     fetchNames()
-  }, [address, publicClient])
+  }, [address])
 
   async function handleRenew(name: string, chainId: number) {
     const chain = SUPPORTED_CHAINS.find(c => c.id === chainId)
@@ -168,7 +94,6 @@ export default function ManageTab() {
       setMsg({ text: `Transferred ${name}.strike`, ok: true })
       setTransferTarget(null)
       setTransferAddr('')
-      // Remove from local list
       setNames(prev => prev.filter(n => !(n.name === name && n.chainId === chainId)))
     } catch (e: any) {
       setMsg({ text: e.shortMessage || 'Transaction failed', ok: false })
@@ -198,7 +123,6 @@ export default function ManageTab() {
         </div>
       ) : loading ? (
         <>
-          {/* Loading state */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[1,2,3].map(i => (
               <div key={i} className="card p-4">
@@ -215,12 +139,11 @@ export default function ManageTab() {
             ))}
           </div>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
-            Scanning Arc Testnet for your names...
+            Loading your names...
           </p>
         </>
       ) : (
         <>
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[
               { label: 'Names owned',   val: names.length,      color: '#9080FF' },
@@ -241,7 +164,6 @@ export default function ManageTab() {
             ))}
           </div>
 
-          {/* Notification */}
           {msg && (
             <div className="mb-4 px-4 py-3 rounded-xl text-sm"
               style={{
@@ -253,7 +175,6 @@ export default function ManageTab() {
             </div>
           )}
 
-          {/* Empty state */}
           {names.length === 0 && (
             <div className="card p-8 text-center">
               <p style={{ fontSize: 32, marginBottom: 12 }}>◈</p>
@@ -266,34 +187,29 @@ export default function ManageTab() {
             </div>
           )}
 
-          {/* Name list */}
           <div className="flex flex-col gap-3">
             {names.map(item => {
-              const days        = daysUntilExpiry(item.expiry)
-              const expiring    = days <= 60
-              const chainInfo   = SUPPORTED_CHAINS.find(c => c.id === item.chainId)
+              const days      = daysUntilExpiry(item.expiry)
+              const expiring  = days <= 60
+              const chainInfo = SUPPORTED_CHAINS.find(c => c.id === item.chainId)
 
               return (
                 <div key={`${item.name}-${item.chainId}`} className="card p-5">
                   <div className="flex items-start justify-between gap-4">
-                    {/* Left */}
                     <div className="flex items-center gap-4">
                       <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center
-                                   font-bold text-xl flex-shrink-0"
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl flex-shrink-0"
                         style={{ background: 'rgba(85,64,232,0.15)', color: '#9080FF',
                           fontFamily: 'var(--font-display)' }}
                       >
                         {item.name[0].toUpperCase()}
                       </div>
                       <div>
-                        <div style={{ fontFamily: 'var(--font-display)',
-                          fontWeight: 700, fontSize: 16 }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16 }}>
                           {item.name}.strike
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span style={{ fontSize: 12,
-                            color: chainInfo?.color || 'var(--text-secondary)' }}>
+                          <span style={{ fontSize: 12, color: chainInfo?.color || 'var(--text-secondary)' }}>
                             {chainInfo?.icon} {item.chain}
                           </span>
                           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>·</span>
@@ -305,7 +221,6 @@ export default function ManageTab() {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleRenew(item.name, item.chainId)}
@@ -321,9 +236,7 @@ export default function ManageTab() {
                         {actionLoading === item.name + '-renew' ? '...' : '↺ Renew'}
                       </button>
                       <button
-                        onClick={() => setTransferTarget(
-                          transferTarget === item.name ? null : item.name
-                        )}
+                        onClick={() => setTransferTarget(transferTarget === item.name ? null : item.name)}
                         className="px-4 py-2 rounded-xl text-xs transition-all"
                         style={{
                           fontFamily: 'var(--font-display)', fontWeight: 600,
@@ -337,10 +250,8 @@ export default function ManageTab() {
                     </div>
                   </div>
 
-                  {/* Transfer panel */}
                   {transferTarget === item.name && (
-                    <div className="mt-4 pt-4"
-                      style={{ borderTop: '1px solid var(--border-color)' }}>
+                    <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border-color)' }}>
                       <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
                         Transfer to address
                       </p>
