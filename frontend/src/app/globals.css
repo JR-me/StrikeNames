@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --strike-purple: #5540E8;
+  --strike-light: #9080FF;
+  --strike-coral: #FF6B6B;
+  --strike-mint: #2ED573;
+  --strike-amber: #FFD93D;
+
+  --bg-primary: #0A0812;
+  --bg-secondary: #120F1E;
+  --bg-card: #1A1630;
+  --bg-card-hover: #1F1B38;
+  --border-color: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.16);
+
+  --text-primary: #F5F3FF;
+  --text-secondary: rgba(245,243,255,0.6);
+  --text-muted: rgba(245,243,255,0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* RainbowKit overrides */
+[data-rk] {
+  --rk-colors-accentColor: #5540E8 !important;
+  --rk-colors-accentColorForeground: white !important;
+  --rk-colors-modalBackground: #1A1630 !important;
+  --rk-colors-modalBorder: rgba(255,255,255,0.08) !important;
+  --rk-colors-generalBorder: rgba(255,255,255,0.08) !important;
+  --rk-colors-menuItemBackground: #1F1B38 !important;
+  --rk-colors-profileForeground: #1A1630 !important;
+  --rk-colors-closeButton: rgba(255,255,255,0.6) !important;
+  --rk-colors-closeButtonBackground: rgba(255,255,255,0.08) !important;
+  --rk-colors-connectButtonBackground: #5540E8 !important;
+  --rk-colors-connectButtonText: white !important;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glow orbs */
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(85, 64, 232, 0.15) 0%, transparent 70%);
+  top: -200px;
+  left: -100px;
+}
+
+.bg-orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 70%);
+  bottom: 100px;
+  right: -50px;
+}
+
+/* Card styles */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-card-hover);
+}
+
+/* Strike gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #9080FF 0%, #5540E8 40%, #FF6B6B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated gradient border */
+.gradient-border {
+  position: relative;
+  border-radius: 16px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #5540E8, #9080FF, #FF6B6B);
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gradient-border:hover::before,
+.gradient-border:focus-within::before {
+  opacity: 1;
+}
+
+/* Input styles */
+.strike-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  border-radius: 12px;
+  transition: border-color 0.2s, background 0.2s;
+  outline: none;
+}
+
+.strike-input:focus {
+  border-color: rgba(85, 64, 232, 0.6);
+  background: rgba(85, 64, 232, 0.06);
+}
+
+.strike-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Button base */
+.btn-primary {
+  background: var(--strike-purple);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.1) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.4s;
+}
+
+.btn-primary:hover::after {
+  transform: translateX(100%);
+}
+
+.btn-primary:hover {
+  background: #6650F0;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Shimmer loading */
+.shimmer {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Badge */
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: var(--font-display);
+}
+
+.badge-available {
+  background: rgba(46, 213, 115, 0.15);
+  color: #2ED573;
+  border: 1px solid rgba(46, 213, 115, 0.25);
+}
+
+.badge-taken {
+  background: rgba(255, 71, 87, 0.15);
+  color: #FF4757;
+  border: 1px solid rgba(255, 71, 87, 0.25);
+}
+
+.badge-expiring {
+  background: rgba(255, 193, 7, 0.15);
+  color: #FFD93D;
+  border: 1px solid rgba(255, 193, 7, 0.25);
+}
+
+/* Tab active indicator */
+.tab-active {
+  color: white;
+  border-bottom: 2px solid var(--strike-purple);
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+}
+.tooltip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border-hover);
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 50;
+}
