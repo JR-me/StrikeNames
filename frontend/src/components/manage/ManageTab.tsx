@@ -51,13 +51,20 @@ export default function ManageTab() {
         if (!chain.registrarAddress || chain.registrarAddress === '-' as any) continue
 
         try {
-          console.log(`Scanning chain ${chain.id} (${chain.name}) registrar: ${chain.registrarAddress}`)
-          // Get all NameRegistered events for this wallet on this chain
+          // Get current block and scan only last 100,000 blocks
+          // Arc RPC rejects full-history getLogs (413 Content Too Large)
+          const latestBlock = await client.getBlockNumber()
+          const fromBlock = latestBlock > BigInt(100000)
+            ? latestBlock - BigInt(100000)
+            : BigInt(0)
+
+          console.log(`Scanning chain ${chain.id} (${chain.name}) blocks ${fromBlock}–${latestBlock}`)
+
           const logs = await client.getLogs({
             address: chain.registrarAddress,
             event: NAME_REGISTERED_EVENT,
             args: { owner: address },
-            fromBlock: BigInt(0),
+            fromBlock,
             toBlock: 'latest',
           })
           console.log(`Found ${logs.length} log(s) on ${chain.name}`)
