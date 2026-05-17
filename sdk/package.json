@@ -1,0 +1,14 @@
+{
+  "name": "@strike/resolver",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./constants": "./constants.js",
+    "./abis": "./abis.js"
+  },
+  "peerDependencies": {
+    "ethers": "^6.0.0"
+  }
+}

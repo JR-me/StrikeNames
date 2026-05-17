@@ -1,0 +1,9 @@
+export const STRIKE_CONTRACTS = {
+  5042002: {
+    registry:  "0x7bb83ED03637cBFbFFCA2c2b0905DDD281547e88",
+    resolver:  "0xCb6536252F5b0eE6cA1aa567989AdAD5f2cA651B",
+    registrar: "0x94E74282880cdd723274Ff074a5FF8238Ff7D1DD",
+  },
+};
+
+export const STRIKE_BASE_NODE = "0xcdf23a29e5a2365712a16a5925932f671d00f54890ecf4ab721fb527cb53ebd2";
