@@ -51,6 +51,7 @@ export default function ManageTab() {
         if (!chain.registrarAddress || chain.registrarAddress === '-' as any) continue
 
         try {
+          console.log(`Scanning chain ${chain.id} (${chain.name}) registrar: ${chain.registrarAddress}`)
           // Get all NameRegistered events for this wallet on this chain
           const logs = await client.getLogs({
             address: chain.registrarAddress,
@@ -59,6 +60,7 @@ export default function ManageTab() {
             fromBlock: BigInt(0),
             toBlock: 'latest',
           })
+          console.log(`Found ${logs.length} log(s) on ${chain.name}`)
 
           // For each registration, get the current expiry from the contract
           for (const log of logs) {
@@ -97,8 +99,8 @@ export default function ManageTab() {
               // Skip names that error on read
             }
           }
-        } catch {
-          // Chain may not be reachable — skip
+        } catch (err) {
+          console.error(`Error scanning ${chain.name}:`, err)
         }
       }
 
