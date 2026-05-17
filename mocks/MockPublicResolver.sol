@@ -9,8 +9,8 @@ contract MockPublicResolver is IPublicResolver {
     mapping(bytes32 => mapping(string => string)) public texts;
     mapping(bytes32 => bytes) public contenthashes;
 
-    function setAddr(bytes32 node, address addr) external {
-        addrs[node] = addr;
+    function setAddr(bytes32 node, address _addr) external {
+        addrs[node] = _addr;
     }
 
     function setText(bytes32 node, string calldata key, string calldata value) external {

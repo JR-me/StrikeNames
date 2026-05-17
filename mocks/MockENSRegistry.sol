@@ -12,23 +12,23 @@ contract MockENSRegistry is IENSRegistry {
     function setSubnodeRecord(
         bytes32 node,
         bytes32 label,
-        address owner,
-        address resolver,
-        uint64 ttl
+        address _owner,
+        address _resolver,
+        uint64 _ttl
     ) external {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        owners[subnode] = owner;
-        resolvers[subnode] = resolver;
-        ttls[subnode] = ttl;
+        owners[subnode] = _owner;
+        resolvers[subnode] = _resolver;
+        ttls[subnode] = _ttl;
     }
 
     function setSubnodeOwner(
         bytes32 node,
         bytes32 label,
-        address owner
+        address _owner
     ) external returns (bytes32) {
         bytes32 subnode = keccak256(abi.encodePacked(node, label));
-        owners[subnode] = owner;
+        owners[subnode] = _owner;
         return subnode;
     }
 
