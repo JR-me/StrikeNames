@@ -27,7 +27,7 @@ type OwnedName = {
 export default function ManageTab() {
   const { address }          = useAccount()
   const { writeContractAsync } = useWriteContract()
-  const publicClient         = usePublicClient()
+  const publicClient         = usePublicClient({ chainId: 5042002 })
 
   const [names, setNames]             = useState<OwnedName[]>([])
   const [loading, setLoading]         = useState(false)
