@@ -48,17 +48,18 @@ export default function ManageTab() {
       const allNames: OwnedName[] = []
 
       for (const chain of SUPPORTED_CHAINS) {
+        // Only scan Arc Testnet — other chains use a different client
+        if (chain.id !== 5042002) continue
         if (!chain.registrarAddress || chain.registrarAddress === '-' as any) continue
 
         try {
-          // Get current block and scan only last 100,000 blocks
-          // Arc RPC rejects full-history getLogs (413 Content Too Large)
+          // Arc RPC limits eth_getLogs to 10,000 block range
           const latestBlock = await client.getBlockNumber()
-          const fromBlock = latestBlock > BigInt(100000)
-            ? latestBlock - BigInt(100000)
+          const fromBlock = latestBlock > BigInt(10000)
+            ? latestBlock - BigInt(10000)
             : BigInt(0)
 
-          console.log(`Scanning chain ${chain.id} (${chain.name}) blocks ${fromBlock}–${latestBlock}`)
+          console.log(`Scanning Arc blocks ${fromBlock}–${latestBlock} for ${address}`)
 
           const logs = await client.getLogs({
             address: chain.registrarAddress,
@@ -67,7 +68,7 @@ export default function ManageTab() {
             fromBlock,
             toBlock: 'latest',
           })
-          console.log(`Found ${logs.length} log(s) on ${chain.name}`)
+          console.log(`Found ${logs.length} log(s) on Arc`)
 
           // For each registration, get the current expiry from the contract
           for (const log of logs) {
