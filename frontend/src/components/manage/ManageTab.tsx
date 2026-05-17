@@ -56,7 +56,7 @@ export default function ManageTab() {
             address: chain.registrarAddress,
             event: NAME_REGISTERED_EVENT,
             args: { owner: address },
-            fromBlock: 0n,
+            fromBlock: BigInt(0),
             toBlock: 'latest',
           })
 
