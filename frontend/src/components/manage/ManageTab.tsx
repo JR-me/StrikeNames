@@ -39,6 +39,7 @@ export default function ManageTab() {
   // Fetch all names registered by the connected wallet across all supported chains
   useEffect(() => {
     if (!address || !publicClient) return
+    const client = publicClient!
 
     async function fetchNames() {
       setLoading(true)
@@ -51,7 +52,7 @@ export default function ManageTab() {
 
         try {
           // Get all NameRegistered events for this wallet on this chain
-          const logs = await publicClient.getLogs({
+          const logs = await client.getLogs({
             address: chain.registrarAddress,
             event: NAME_REGISTERED_EVENT,
             args: { owner: address },
@@ -65,7 +66,7 @@ export default function ManageTab() {
             if (!name) continue
 
             try {
-              const expiry = await publicClient.readContract({
+              const expiry = await client.readContract({
                 address: chain.registrarAddress,
                 abi: REGISTRAR_ABI,
                 functionName: 'nameExpiry',
@@ -76,7 +77,7 @@ export default function ManageTab() {
               const now = BigInt(Math.floor(Date.now() / 1000))
               if (expiry > now) {
                 // Check it's still owned by this wallet (hasn't been transferred)
-                const available = await publicClient.readContract({
+                const available = await client.readContract({
                   address: chain.registrarAddress,
                   abi: REGISTRAR_ABI,
                   functionName: 'available',
